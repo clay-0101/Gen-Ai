@@ -1,65 +1,83 @@
-import "dotenv/config"
-import {ChatGroq} from "@langchain/groq"
+import 'dotenv/config'
+import { ChatGroq } from "@langchain/groq"
 import rl from "readline/promises"
-import {tool,createAgent} from "langchain"
+import { tool , createAgent } from "langchain"
 import * as z from "zod"
 
-// Tools 
-let events = []
+let idCards = []
 
-const createEventTool = tool(
-    async function ({date , title , description }) {
-        console.log('Create an Event..')
+const createIdCard = tool(
+    async function ({  name, age, gender }) {
+        let id = Date.now()
+        console.log("Genrating id card")
 
-        events.push({
-            date,
-            title,
-            description
+        idCards.push({
+            id,
+            name,
+            age,
+            gender
         })
 
-        return "Event Created"
+        return 'Id Card Genrated'
+
     },
     {
-        name : "CreateEvent",
-        description : "Create an event with the date , title and description",
-        schema : z.object({
-            date : z.string(),
-            title : z.string(),
-            description : z.string()
+        name: "createId",
+        description: "create Student id card with name age gender and id",
+        schema: z.object({
+            id: z.number(),
+            name: z.string(),
+            age: z.number(),
+            gender: z.string()
         })
     }
 )
 
-const getAllEventsTool = tool(
-    async function ({ }){
-        console.log("Retrive All Events")
+const getAllIdCards = tool(
+    async function ({ }) {
+        console.log("Fetching all id Cards...")
 
-        return events
+        return idCards
     },
     {
-        name : "getAllEvent",
-        description : "Retrive all the evnets",
-        schema : z.object({})
+        name: "getIdCard",
+        description: "List all the id cards",
+        schema: z.object({})
     }
 )
 
+const getSingleIdCard = tool(
+    async function ({ id }) {
+        console.log("Fetching details..")
+
+        return idCards.find((ic) => ic.id == id)
+    },
+    {
+        name: "getSingleIdCard",
+        description: "Fetch single id card using unique id that is given by the user",
+        schema: z.object({
+            id : z.number()
+        })
+    }
+)
 
 let readline = rl.createInterface({
-    input : process.stdin,
-    output : process.stdout
+    input: process.stdin,
+    output: process.stdout
 })
 
 let model = new ChatGroq({
-    model : "openai/gpt-oss-120b",
-    apiKey : process.env.GROQ_API_KEY
+    model: "openai/gpt-oss-120b",
+    apiKey: process.env.GROQ_API_KEY
 })
 
-let agent =  createAgent({
+let agent = createAgent({
     model ,
-    tools : [createEventTool, getAllEventsTool]
+    tools : [createIdCard, getAllIdCards, getSingleIdCard]
 })
 
 while(true){
+
     let userInput = await readline.question("How can i help you today : ")
 
     let stream = await agent.stream({
@@ -74,6 +92,5 @@ while(true){
     for await (let [chunk] of stream){
         process.stdout.write(chunk.content)
     }
-
-     process.stdout.write("\n")
+    process.stdout.write("\n\n\n")
 }
