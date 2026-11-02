@@ -1,6 +1,7 @@
 import fs from "fs/promises"
 import { HOME_DIR, CONFIG_DIR } from "./constant.js"
 import path from "path"
+import axios from "axios"
 
 
 /*
@@ -21,7 +22,7 @@ export async function getSettingsFile() {
 
 
     
-    let settingsFilePath = path.join(CONFIG_DIR, "settings.json")
+    let settingsFilePath = path.join(CONFIG_DIR, "setting.json")
 
     try {
         await fs.access(settingsFilePath)
@@ -43,4 +44,33 @@ export async function saveApiKey(apiKey){
         ...settingsFileContent,
         apiKey
     }))
+}
+
+export async function getApiKey(){
+
+    let setting = await getSettingsFile()
+    
+    const apiKey = setting.apiKey || null
+
+    if(!apiKey){
+        return {
+            errro : "Api Key not found in setting file"
+        }
+    }
+
+    try {
+        let response = await axios.get("https://api.groq.com/openai/v1/models", {
+            headers : {
+                Authorization : `Bearer ${apiKey}`
+            }
+        })
+
+        return {
+            apiKey
+        }
+    } catch (error) {
+        return {
+            error : "Invalid Api key"
+        }
+    }
 }
