@@ -61,7 +61,7 @@ export async function getApiKey(){
     try {
         let response = await axios.get("https://api.groq.com/openai/v1/models", {
             headers : {
-                Authorization : `Bearer ${apiKey}`
+                "Authorization" : `Bearer ${apiKey}`
             }
         })
 

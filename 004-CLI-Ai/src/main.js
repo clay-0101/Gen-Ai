@@ -1,10 +1,11 @@
+import initGraph from "./graph/graph.js";
 import { getApiKey, getSettingsFile, saveApiKey } from "./utils/file.utils.js";
 import readline from "./utils/readFile.js";
 
 async function main() {
     let setting = await getSettingsFile()
 
-    if (!setting.apikey) {
+    if (!setting.apiKey) {
         let apiKey = await readline.question("Enter Api Key : ")
         await saveApiKey(apiKey)
     }
@@ -19,6 +20,8 @@ async function main() {
     }
 
     const apiKey = response.apiKey
+    
+    await initGraph()
 
     readline.close()
 }
