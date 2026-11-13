@@ -17,12 +17,13 @@ export default async function LLMNode(state, config) {
     
     process.stdout.write("[AI] : ")
 
-    let aiMessages = ""
+    let aiMessages = null
 
     for await (let chunk of stream){
         process.stdout.write(chunk.text)
-        console.log(chunk)
-        aiMessages += chunk.text
+        
+        if(!aiMessages) aiMessages = chunk
+        else aiMessages = aiMessages.concat(chunk)
     }
 
     process.stdout.write("\n")
@@ -30,7 +31,7 @@ export default async function LLMNode(state, config) {
     return {
         messages : [
             ...state.messages,
-            new AIMessage(aiMessages)
+            aiMessages
         ]
     }
 }
