@@ -1,23 +1,36 @@
-import {StateGraph, START, END} from "@langchain/langgraph"
+import { StateGraph, START, END } from "@langchain/langgraph"
 import * as z from "zod"
-import LLMNode from "../graph/node.js"
+import LLMNode, { ToolNode } from "../graph/node.js"
 import readline from "../../utils/readFile.js"
-import {HumanMessage,SystemMessage} from "langchain"
+import { HumanMessage, SystemMessage } from "langchain"
 
 
 let stateFormat = z.object({
-    messages : z.array(z.any())
+    messages: z.array(z.any())
 })
 
 
 const graph = new StateGraph(stateFormat)
     .addNode("LLMNode", LLMNode)
+    .addNode("ToolNode", ToolNode)
     .addEdge(START, "LLMNode")
-    .addEdge("LLMNode", END)
+    .addEdge("ToolNode", "LLMNode")
+    .addConditionalEdges("LLMNode",
+        (state) => {
+
+            let lastMessage = state.messages[ state.messages.length - 1 ]
+
+            if(lastMessage.tool_calls && lastMessage.tool_calls.length > 0){
+                return "ToolNode"
+            }
+            return "__end__"
+        },
+        ["ToolNode", "__end__"]
+    )
     .compile()
 
 
-export default async function initGraph (){
+export default async function initGraph() {
 
     let memoryMessages = [
         new SystemMessage(`
@@ -28,20 +41,21 @@ export default async function initGraph (){
             `)
     ]
 
-    while(true){
+    while (true) {
 
         let userInput = await readline.question("[User] : ")
 
-        if(userInput.toLocaleLowerCase() === "/bye"){
+        if (userInput.toLocaleLowerCase() === "/bye") {
             break;
         }
-        
+
         memoryMessages.push(new HumanMessage(userInput))
 
         let response = await graph.invoke({
-            messages : memoryMessages
-        }, {context : {contantValue : "any value"}})
+            messages: memoryMessages
+        }, { context: { contantValue: "any value" } })
 
+    
         memoryMessages = response.messages
 
     }
